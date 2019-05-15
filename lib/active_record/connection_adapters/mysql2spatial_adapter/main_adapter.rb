@@ -63,9 +63,12 @@ module ActiveRecord
           NATIVE_DATABASE_TYPES
         end
 
+        # By default, RGeo::WKRep::WKBGenerator generates WKB in big-endian format,
+        # But MySQL running on x86 uses little-endian,
+        # Force RGeo::WKRep::WKBGenerator to generate WKB in little endian format.
         def quote(value_, column_=nil)
           if ::RGeo::Feature::Geometry.check_type(value_)
-            "ST_GeomFromWKB(0x#{::RGeo::WKRep::WKBGenerator.new(hex_format: true).generate(value_)},#{value_.srid})"
+            "ST_GeomFromWKB(0x#{::RGeo::WKRep::WKBGenerator.new(hex_format: true, little_endian: true).generate(value_)},#{value_.srid})"
           else
             super
           end
