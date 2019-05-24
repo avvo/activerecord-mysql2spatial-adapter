@@ -126,12 +126,22 @@ module ActiveRecord
 
         protected
 
-        def initialize_type_map(m)
+        def initialize_type_map(map)
           super
-          register_class_with_limit m, %r(geometry)i, Type::Spatial
-          m.alias_type %r(point)i, 'geometry'
-          m.alias_type %r(linestring)i, 'geometry'
-          m.alias_type %r(polygon)i, 'geometry'
+          %w[
+            geometry
+            point
+            linestring
+            polygon
+            multipoint
+            multilinestring
+            multipolygon
+            geometrycollection
+          ].each do |geo_type|
+            map.register_type(geo_type) do |sql_type|
+              Type::Spatial.new(sql_type)
+            end
+          end
         end
       end
     end
