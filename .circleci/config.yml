@@ -2,13 +2,22 @@
 version: 2
 jobs:
   test:
+    working_directory: ~/project
+
     docker:
     - image: circleci/ruby:2.5
+    - image: mysql:5.7
+      environment:
+        MYSQL_ROOT_PASSWORD: root
+        MYSQL_ROOT_HOST: '%'
+        MYSQL_DATABASE: mysql2spatial
+
     steps:
     - run: gem install bundler
     - run: bundle config packagecloud.io $PACKAGECLOUD_READ_TOKEN
     - checkout
     - run: bundle install
+    - run: cp ~/project/test/database-example.yml ~/project/test/database.yml
     - run: rake test
   build:
     docker:
