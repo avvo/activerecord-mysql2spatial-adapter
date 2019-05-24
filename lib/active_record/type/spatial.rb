@@ -23,7 +23,7 @@ module ActiveRecord
       end
 
       def changed?(old_value, new_value, _new_value_before_type_cast)
-        old_value.to_s != new_value.to_s || old_value.srid != new_value.srid
+        old_value.to_s != new_value.to_s || old_value&.srid != new_value.srid
       end
 
       def serialize(value)
