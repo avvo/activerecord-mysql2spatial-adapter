@@ -24,16 +24,14 @@ workflows:
   version: 2
   build-workflow:
     jobs:
-    - test:
-        context: org-global
-        filters:
-          tags:
-            only: /.*/
-          branches:
-            only: /.*/
+    # - test:
+    #     context: org-global
+    #     filters:
+    #       tags:
+    #         only: /.*/
+    #       branches:
+    #         only: /.*/
     - build:
-        requires:
-        - test
         context: org-global
         filters:
           tags:
