@@ -1,36 +1,63 @@
 ---
-version: 2
+version: 2.1
+orbs:
+  package-build-and-push: avvo/package-build-and-push@dev:gem-test2
 jobs:
   test:
     docker:
-    - image: circleci/ruby:2.5
+      - image: circleci/ruby:2.6
+      - image: mysql:5.7
+        environment:
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_ROOT_HOST: "%"
     steps:
-    - run: gem install bundler
-    - run: bundle config packagecloud.io $PACKAGECLOUD_READ_TOKEN
-    - checkout
-    - run: bundle install
-    - run: rake test
+      - checkout
+      - run: sudo apt update
+      - run: sudo apt install -y libgeos-dev mariadb-client
+      - run:
+          name: Wait for MySQL to start up
+          command: |-
+            set +e
+            set -x
+            count=0
+            up=no
+            while [ "$up" == "no" ]; do
+              nc -z 127.0.0.1 3306
+              if [ $? -eq 0 ]; then
+                up=yes
+              else
+                let count=$count+1
+                if [ $count -eq 300 ]; then
+                  echo "MySQL did not start in 300 seconds, giving up"
+                  exit 1
+                fi
+                sleep 1
+              fi
+            done
+      - run: mysql -h 127.0.0.1 -u root --password=root -e 'create database geotest'
+      - run:
+          name: Set up test database configuration file
+          command: |
+            echo 'adapter: mysql2spatial' > test/database.yml
+            echo 'encoding: utf8' >> test/database.yml
+            echo 'reconnect: true' >> test/database.yml
+            echo 'host: 127.0.0.1' >> test/database.yml
+            echo 'database: geotest' >> test/database.yml
+            echo 'username: root' >> test/database.yml
+            echo 'password: root' >> test/database.yml
+      - package-build-and-push/gem-test
   build:
     docker:
-    - image: circleci/ruby:2.5
+      - image: circleci/ruby:2.6
     steps:
-    - run: gem install package_cloud
-    - checkout
-    # Clean up any .gem files from all previous builds
-    - run: rm -f *.gem
-    - run: gem build $(ls *.gemspec)
-    - run: package_cloud push avvo/gems $(ls *.gem)
+      - checkout
+      - package-build-and-push/gem-build-and-push
 workflows:
-  version: 2
+  version: 2.1
   build-workflow:
     jobs:
-    # - test:
-    #     context: org-global
-    #     filters:
-    #       tags:
-    #         only: /.*/
-    #       branches:
-    #         only: /.*/
+    - test:
+        context: org-global
     - build:
         context: org-global
         filters:
